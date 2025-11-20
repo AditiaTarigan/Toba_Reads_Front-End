@@ -2,62 +2,237 @@ import 'package:flutter/material.dart';
 import '../api/api_service.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({Key? key}) : super(key: key);
 
   @override
   _LoginPageState createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool loading = false;
 
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
   void login() async {
-    setState(() => loading = true);
+    if (_formKey.currentState!.validate()) {
+      setState(() => loading = true);
 
-    final response = await ApiService.login(
-      emailController.text,
-      passwordController.text,
-    );
-
-    setState(() => loading = false);
-
-    if (response['success'] == true) {
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response['message'] ?? "Login gagal")),
+      final response = await ApiService.login(
+        emailController.text,
+        passwordController.text,
       );
+
+      setState(() => loading = false);
+
+      if (response['success'] == true) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        String errorMessage = response['message'] ?? "Login gagal";
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Login")),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: "Email"),
-            ),
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: "Password"),
-            ),
-            const SizedBox(height: 20),
-            loading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(onPressed: login, child: const Text("Login")),
-            TextButton(
-              onPressed: () => Navigator.pushNamed(context, '/register'),
-              child: const Text("Belum punya akun? Register"),
-            ),
-          ],
+      backgroundColor: const Color(0xFF457B9D),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 25.0, vertical: 50),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+
+              // ========== LOGO & TITLE ==========
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 20.0),
+                  child: Image.asset(
+                    'assets/images/logo_tobareads.png',
+                    height: MediaQuery.of(context).size.height * 0.15, // 15% dari layar
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 25),
+
+              const Text(
+                "Hello!",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const Text(
+                "Selamat datang di Toba Reads",
+                style: TextStyle(fontSize: 16, color: Colors.white70),
+              ),
+
+              const SizedBox(height: 20),
+
+              // ========== FORM BOX ==========
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2A486B),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          "Login",
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+
+                      // EMAIL
+                      TextFormField(
+                        controller: emailController,
+                        decoration: InputDecoration(
+                          hintText: "Email",
+                          hintStyle: const TextStyle(color: Colors.white70),
+                          prefixIcon: const Icon(Icons.email, color: Colors.white),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.1),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Colors.white),
+                          ),
+                        ),
+                        style: const TextStyle(color: Colors.white),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Email tidak boleh kosong';
+                          }
+                          if (!value.contains("@")) {
+                            return 'Email tidak valid';
+                          }
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // PASSWORD
+                      TextFormField(
+                        controller: passwordController,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          hintText: "Password",
+                          hintStyle: const TextStyle(color: Colors.white70),
+                          prefixIcon: const Icon(Icons.lock, color: Colors.white),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.1),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Colors.white),
+                          ),
+                        ),
+                        style: const TextStyle(color: Colors.white),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Password tidak boleh kosong';
+                          }
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          "Lupa Password?",
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // TOMBOL LOGIN
+                      ElevatedButton(
+                        onPressed: login,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6DADE7),
+                          minimumSize: const Size(double.infinity, 50),
+                        ),
+                        child: loading
+                            ? const CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              )
+                            : const Text("Masuk", style: TextStyle(fontSize: 18)),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Divider
+                      Row(
+                        children: const [
+                          Expanded(child: Divider(color: Colors.white)),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Text(
+                              "Atau Masuk Dengan",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                          Expanded(child: Divider(color: Colors.white)),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // SOSMED ICONS
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: const [
+                          Icon(Icons.facebook, color: Colors.white, size: 32),
+                          Icon(Icons.camera_alt, color: Colors.white, size: 32),
+                          Icon(Icons.account_circle, color: Colors.white, size: 32),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushReplacementNamed(context, '/register');
+                        },
+                        child: const Text(
+                          "Belum punya akun? Daftar",
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

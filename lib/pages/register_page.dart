@@ -1,70 +1,202 @@
 import 'package:flutter/material.dart';
 import '../api/api_service.dart';
+import '../navigation_service.dart'; // Import navigateTo
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
+  const RegisterPage({Key? key}) : super(key: key);
 
   @override
-  _RegisterPageState createState() => _RegisterPageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  final namaController = TextEditingController();
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  bool loading = false;
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
-  void register() async {
-    setState(() => loading = true);
-
-    final response = await ApiService.register(
-      namaController.text,
-      emailController.text,
-      passwordController.text,
-    );
-
-    setState(() => loading = false);
-
-    if (response['success'] == true) {
-      Navigator.pushReplacementNamed(context, '/');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response['message'] ?? "Registrasi gagal")),
-      );
-    }
-  }
+  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Register")),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: namaController,
-              decoration: const InputDecoration(labelText: "Nama"),
-            ),
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: "Email"),
-            ),
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: "Password"),
-            ),
-            const SizedBox(height: 20),
-            loading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: register,
-                    child: const Text("Register"),
+      backgroundColor: const Color(0xFF457B9D),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 25.0, vertical: 50),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // LOGO
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 20.0),
+                  child: Image.asset(
+                    'assets/images/logo_tobareads.png',
+                    height: MediaQuery.of(context).size.height * 0.15,
+                    fit: BoxFit.contain,
                   ),
-          ],
+                ),
+              ),
+
+              const SizedBox(height: 25),
+
+              // TITLE
+              const Text(
+                "Daftar",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const Text(
+                "Buat akun Toba Reads sekarang",
+                style: TextStyle(fontSize: 16, color: Colors.white70),
+              ),
+
+              const SizedBox(height: 20),
+
+              // ===== CARD FORM =====
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2A486B),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      _buildInputField("Nama Lengkap", Icons.person, _nameController),
+                      const SizedBox(height: 12),
+
+                      _buildInputField("Email", Icons.email, _emailController,
+                          keyboardType: TextInputType.emailAddress),
+                      const SizedBox(height: 12),
+
+                      _buildInputField("Nomor Telepon", Icons.phone, _phoneController,
+                          keyboardType: TextInputType.phone),
+                      const SizedBox(height: 12),
+
+                      _buildInputField("Kata Sandi", Icons.lock, _passwordController,
+                          obscure: true),
+                      const SizedBox(height: 12),
+
+                      _buildInputField("Konfirmasi Kata Sandi", Icons.lock_outline,
+                          _confirmPasswordController,
+                          obscure: true),
+
+                      const SizedBox(height: 25),
+
+                      // ===== BUTTON REGISTER =====
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6DADE7),
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () async {
+                          if (_formKey.currentState!.validate()) {
+                            if (_passwordController.text != _confirmPasswordController.text) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Kata sandi dan konfirmasi kata sandi tidak cocok")),
+                              );
+                              return;
+                            }
+
+                            setState(() {
+                              _isLoading = true;
+                            });
+
+                            final response = await ApiService.register(
+                              _nameController.text,
+                              _emailController.text,
+                              _passwordController.text,
+                            );
+
+                            setState(() {
+                              _isLoading = false;
+                            });
+
+                            if (response['success'] == true) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Pendaftaran berhasil! Silakan login.")),
+                              );
+                              Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+                                '/login',
+                                    (Route<dynamic> route) => false,
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(response['message'] ?? "Pendaftaran gagal")),
+                              );
+                            }
+                          }
+                        },
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text("Daftar", style: TextStyle(fontSize: 18)),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      GestureDetector(
+                        onTap: () {
+                          navigateTo('/login'); // Gunakan fungsi navigasi global
+                        },
+                        child: const Text(
+                          "Sudah punya akun? Masuk",
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildInputField(
+      String hint,
+      IconData icon,
+      TextEditingController controller, {
+        bool obscure = false,
+        TextInputType keyboardType = TextInputType.text,
+      }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscure,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white70),
+        prefixIcon: Icon(icon, color: Colors.white),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.1),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Colors.white),
+        ),
+      ),
+      style: const TextStyle(color: Colors.white),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return "$hint tidak boleh kosong";
+        }
+        return null;
+      },
     );
   }
 }
