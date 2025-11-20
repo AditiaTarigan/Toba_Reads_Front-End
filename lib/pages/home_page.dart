@@ -27,7 +27,9 @@ class HomePage extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+      bottomNavigationBar: _buildBottomNavigationBar(
+        context,
+      ), // PASS CONTEXT KE SINI
     );
   }
 
@@ -85,7 +87,7 @@ class HomePage extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               children: const [
                 _StoryCard(
-                  title: 'Bertang',
+                  title: 'Legenda Danau Toba',
                   author: 'Celine Bellen',
                   imageUrl: 'https://via.placeholder.com/120x150',
                 ),
@@ -169,26 +171,48 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Bottom Navigation Bar
-  Widget _buildBottomNavigationBar() {
+  // Bottom Navigation Bar - TERIMA PARAMETER CONTEXT
+  Widget _buildBottomNavigationBar(BuildContext context) {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
       currentIndex: 0, // Home selected
       selectedItemColor: Colors.blue,
       unselectedItemColor: Colors.grey,
+      onTap: (index) {
+        // PANGGIL METHOD _onItemTapped DENGAN CONTEXT
+        _onItemTapped(index, context);
+      },
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Cari'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bookmark_border),
-          label: 'Disimpan',
-        ),
+        BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Quizz'),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),
           label: 'Profil',
         ),
       ],
     );
+  }
+
+  // Method untuk menangani tap pada bottom navigation - PASTIKAN DI DALAM CLASS
+  void _onItemTapped(int index, BuildContext context) {
+    switch (index) {
+      case 0:
+        // Already on home page, do nothing
+        break;
+      case 1:
+        // Navigate to search page
+        // Navigator.pushNamed(context, '/search');
+        break;
+      case 2:
+        // Navigate to quiz page
+        Navigator.pushNamed(context, '/kuis');
+        break;
+      case 3:
+        // Navigate to profile page
+        Navigator.pushNamed(context, '/profile');
+        break;
+    }
   }
 }
 

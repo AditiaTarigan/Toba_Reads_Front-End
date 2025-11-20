@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:tobareads/pages/kuis_page.dart';
 import 'pages/login_page.dart';
 import 'pages/register_page.dart';
 import 'pages/home_page.dart';
 import 'pages/loading_screen.dart';
+import 'pages/profil_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -22,6 +24,8 @@ class MyApp extends StatelessWidget {
         '/': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/home': (context) => const HomePage(),
+        '/profile': (context) => const ProfilPage(), // TAMBAH INI
+        '/kuis': (context) => const KuisPage(),
       },
     );
   }
