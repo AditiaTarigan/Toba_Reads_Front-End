@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String _baseUrl = "http://10.0.2.2:8000/api"; // Sesuaikan dengan URL backend Anda
+  static const String _baseUrl =
+      "http://10.0.2.2:8000/api"; // Sesuaikan dengan URL backend Anda
 
   static const Map<String, String> _jsonHeaders = {
     "Accept": "application/json",
@@ -11,15 +12,17 @@ class ApiService {
   };
 
   static Future<Map<String, dynamic>> register(
-    String nama,
-    String email,
-    String password,
+    String nama, // parameter 1
+    String email, // parameter 2
+    String password, // parameter 3
+    String phone, // parameter 4
   ) async {
     final Uri registerUrl = Uri.parse("$_baseUrl/register");
     final String body = jsonEncode({
       "nama": nama,
       "email": email,
       "password": password,
+      "no_hp": phone,
     });
 
     try {
@@ -47,10 +50,7 @@ class ApiService {
     String password,
   ) async {
     final Uri loginUrl = Uri.parse("$_baseUrl/login");
-    final String body = jsonEncode({
-      "email": email,
-      "password": password,
-    });
+    final String body = jsonEncode({"email": email, "password": password});
 
     try {
       final response = await http.post(

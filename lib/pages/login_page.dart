@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_service.dart';
 
 class LoginPage extends StatefulWidget {
@@ -33,12 +34,14 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => loading = false);
 
       if (response['success'] == true) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
         Navigator.pushReplacementNamed(context, '/home');
       } else {
         String errorMessage = response['message'] ?? "Login gagal";
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
       }
     }
   }
@@ -53,14 +56,15 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               // ========== LOGO & TITLE ==========
               Center(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 20.0),
                   child: Image.asset(
                     'assets/images/logo_tobareads.png',
-                    height: MediaQuery.of(context).size.height * 0.15, // 15% dari layar
+                    height:
+                        MediaQuery.of(context).size.height *
+                        0.15, // 15% dari layar
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -113,7 +117,10 @@ class _LoginPageState extends State<LoginPage> {
                         decoration: InputDecoration(
                           hintText: "Email",
                           hintStyle: const TextStyle(color: Colors.white70),
-                          prefixIcon: const Icon(Icons.email, color: Colors.white),
+                          prefixIcon: const Icon(
+                            Icons.email,
+                            color: Colors.white,
+                          ),
                           filled: true,
                           fillColor: Colors.white.withOpacity(0.1),
                           border: OutlineInputBorder(
@@ -142,7 +149,10 @@ class _LoginPageState extends State<LoginPage> {
                         decoration: InputDecoration(
                           hintText: "Password",
                           hintStyle: const TextStyle(color: Colors.white70),
-                          prefixIcon: const Icon(Icons.lock, color: Colors.white),
+                          prefixIcon: const Icon(
+                            Icons.lock,
+                            color: Colors.white,
+                          ),
                           filled: true,
                           fillColor: Colors.white.withOpacity(0.1),
                           border: OutlineInputBorder(
@@ -179,9 +189,14 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         child: loading
                             ? const CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               )
-                            : const Text("Masuk", style: TextStyle(fontSize: 18)),
+                            : const Text(
+                                "Masuk",
+                                style: TextStyle(fontSize: 18),
+                              ),
                       ),
 
                       const SizedBox(height: 20),
@@ -209,7 +224,11 @@ class _LoginPageState extends State<LoginPage> {
                         children: const [
                           Icon(Icons.facebook, color: Colors.white, size: 32),
                           Icon(Icons.camera_alt, color: Colors.white, size: 32),
-                          Icon(Icons.account_circle, color: Colors.white, size: 32),
+                          Icon(
+                            Icons.account_circle,
+                            color: Colors.white,
+                            size: 32,
+                          ),
                         ],
                       ),
 

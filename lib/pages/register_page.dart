@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_service.dart';
-import '../navigation_service.dart'; // Import navigateTo
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -14,7 +14,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
@@ -70,24 +71,43 @@ class _RegisterPageState extends State<RegisterPage> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      _buildInputField("Nama Lengkap", Icons.person, _nameController),
+                      _buildInputField(
+                        "Nama Lengkap",
+                        Icons.person,
+                        _nameController,
+                      ),
                       const SizedBox(height: 12),
 
-                      _buildInputField("Email", Icons.email, _emailController,
-                          keyboardType: TextInputType.emailAddress),
+                      _buildInputField(
+                        "Email",
+                        Icons.email,
+                        _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                      ),
                       const SizedBox(height: 12),
 
-                      _buildInputField("Nomor Telepon", Icons.phone, _phoneController,
-                          keyboardType: TextInputType.phone),
+                      _buildInputField(
+                        "Nomor Telepon",
+                        Icons.phone,
+                        _phoneController,
+                        keyboardType: TextInputType.phone,
+                      ),
                       const SizedBox(height: 12),
 
-                      _buildInputField("Kata Sandi", Icons.lock, _passwordController,
-                          obscure: true),
+                      _buildInputField(
+                        "Kata Sandi",
+                        Icons.lock,
+                        _passwordController,
+                        obscure: true,
+                      ),
                       const SizedBox(height: 12),
 
-                      _buildInputField("Konfirmasi Kata Sandi", Icons.lock_outline,
-                          _confirmPasswordController,
-                          obscure: true),
+                      _buildInputField(
+                        "Konfirmasi Kata Sandi",
+                        Icons.lock_outline,
+                        _confirmPasswordController,
+                        obscure: true,
+                      ),
 
                       const SizedBox(height: 25),
 
@@ -100,54 +120,83 @@ class _RegisterPageState extends State<RegisterPage> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: () async {
-                          if (_formKey.currentState!.validate()) {
-                            if (_passwordController.text != _confirmPasswordController.text) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("Kata sandi dan konfirmasi kata sandi tidak cocok")),
-                              );
-                              return;
-                            }
+                        onPressed: _isLoading
+                            ? null
+                            : () async {
+                                if (_formKey.currentState!.validate()) {
+                                  if (_passwordController.text !=
+                                      _confirmPasswordController.text) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "Kata sandi dan konfirmasi kata sandi tidak cocok",
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
 
-                            setState(() {
-                              _isLoading = true;
-                            });
+                                  setState(() {
+                                    _isLoading = true;
+                                  });
 
-                            final response = await ApiService.register(
-                              _nameController.text,
-                              _emailController.text,
-                              _passwordController.text,
-                            );
+                                  // ✅ PERBAIKI: GUNAKAN NAMED PARAMETERS
+                                  final response = await ApiService.register(
+                                    _nameController.text,
+                                    _emailController.text,
+                                    _passwordController.text,
+                                    _phoneController.text,
+                                  );
 
-                            setState(() {
-                              _isLoading = false;
-                            });
+                                  setState(() {
+                                    _isLoading = false;
+                                  });
 
-                            if (response['success'] == true) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("Pendaftaran berhasil! Silakan login.")),
-                              );
-                              Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-                                '/login',
-                                    (Route<dynamic> route) => false,
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(response['message'] ?? "Pendaftaran gagal")),
-                              );
-                            }
-                          }
-                        },
+                                  if (response['success'] == true) {
+                                    final prefs =
+                                        await SharedPreferences.getInstance();
+                                    await prefs.setBool('isLoggedIn', true);
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "Pendaftaran berhasil! Selamat datang.",
+                                        ),
+                                      ),
+                                    );
+
+                                    Navigator.pushReplacementNamed(
+                                      context,
+                                      '/home',
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          response['message'] ??
+                                              "Pendaftaran gagal",
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
                         child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text("Daftar", style: TextStyle(fontSize: 18)),
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                "Daftar",
+                                style: TextStyle(fontSize: 18),
+                              ),
                       ),
 
                       const SizedBox(height: 20),
 
+                      // LINK KE LOGIN PAGE
                       GestureDetector(
                         onTap: () {
-                          navigateTo('/login'); // Gunakan fungsi navigasi global
+                          Navigator.pushReplacementNamed(context, '/');
                         },
                         child: const Text(
                           "Sudah punya akun? Masuk",
@@ -169,12 +218,12 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildInputField(
-      String hint,
-      IconData icon,
-      TextEditingController controller, {
-        bool obscure = false,
-        TextInputType keyboardType = TextInputType.text,
-      }) {
+    String hint,
+    IconData icon,
+    TextEditingController controller, {
+    bool obscure = false,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return TextFormField(
       controller: controller,
       obscureText: obscure,

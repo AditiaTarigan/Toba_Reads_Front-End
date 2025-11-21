@@ -4,15 +4,12 @@ import 'pages/login_page.dart';
 import 'pages/register_page.dart';
 import 'pages/home_page.dart';
 import 'main.dart'; // Import navigatorKey dan navigateTo
-
 import 'package:tobareads/pages/kuis_page.dart';
-import 'pages/login_page.dart';
-import 'pages/register_page.dart';
-import 'pages/home_page.dart';
 import 'pages/loading_screen.dart';
 import 'pages/profil_page.dart';
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>(); // Definisikan navigatorKey di sini
+final GlobalKey<NavigatorState> navigatorKey =
+    GlobalKey<NavigatorState>(); // Definisikan navigatorKey di sini
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
