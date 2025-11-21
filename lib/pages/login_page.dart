@@ -62,9 +62,7 @@ class _LoginPageState extends State<LoginPage> {
                   padding: const EdgeInsets.only(top: 20.0),
                   child: Image.asset(
                     'assets/images/logo_tobareads.png',
-                    height:
-                        MediaQuery.of(context).size.height *
-                        0.15, // 15% dari layar
+                    height: MediaQuery.of(context).size.height * 0.15,
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -170,7 +168,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
 
                       const SizedBox(height: 10),
-                      Align(
+                      const Align(
                         alignment: Alignment.centerRight,
                         child: Text(
                           "Lupa Password?",

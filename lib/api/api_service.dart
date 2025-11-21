@@ -3,8 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String _baseUrl =
-      "http://10.0.2.2:8000/api"; // Sesuaikan dengan URL backend Anda
+  static const String _baseUrl = "http://10.0.2.2:8000/api";
 
   static const Map<String, String> _jsonHeaders = {
     "Accept": "application/json",
@@ -12,10 +11,10 @@ class ApiService {
   };
 
   static Future<Map<String, dynamic>> register(
-    String nama, // parameter 1
-    String email, // parameter 2
-    String password, // parameter 3
-    String phone, // parameter 4
+    String nama,
+    String email,
+    String password,
+    String phone,
   ) async {
     final Uri registerUrl = Uri.parse("$_baseUrl/register");
     final String body = jsonEncode({
@@ -69,6 +68,28 @@ class ApiService {
     } catch (e) {
       print("LOGIN ERROR: $e");
       return {"success": false, "message": "Terjadi kesalahan: $e"};
+    }
+  }
+
+  // ==========================
+  // GET USER PROFILE - PERBAIKI INI
+  // ==========================
+  static Future<Map<String, dynamic>> getUserProfile(String nama) async {
+    try {
+      final response = await http.get(
+        Uri.parse("$_baseUrl/user/$nama"), // PERBAIKI: _baseUrl bukan baseUrl
+        headers: {"Accept": "application/json"},
+      );
+
+      print("PROFILE STATUS: ${response.statusCode}");
+      print("PROFILE BODY: ${response.body}");
+
+      return _handleResponse(
+        response,
+      ); // Gunakan _handleResponse yang sudah ada
+    } catch (e) {
+      print("PROFILE ERROR: $e");
+      return {"success": false, "message": "Gagal dapat data user"};
     }
   }
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import '../api/api_service.dart';
 
 class ProfilPage extends StatelessWidget {
   const ProfilPage({super.key});
@@ -30,68 +32,138 @@ class ProfilPage extends StatelessWidget {
             _buildStatsSection(),
 
             // Menu Section
-            _buildMenuSection(context), // PASS CONTEXT KE SINI
+            _buildMenuSection(context),
           ],
         ),
       ),
     );
   }
 
-  // Header Profile dengan foto dan nama
+  // Header Profile dengan data dinamis
   Widget _buildProfileHeader() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          // Foto Profil
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.blue, width: 3),
-            ),
-            child: const CircleAvatar(
-              backgroundColor: Colors.grey,
-              backgroundImage: NetworkImage('https://via.placeholder.com/100'),
-            ),
+    return FutureBuilder(
+      future: Future.wait([
+        AuthService.checkLoginStatus(),
+        AuthService.getUsername(),
+      ]),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CircularProgressIndicator();
+        }
+
+        final isLoggedIn = snapshot.data?[0] as bool? ?? false;
+        final username = snapshot.data?[1] as String? ?? '';
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isLoggedIn ? Colors.blue : Colors.grey,
+                    width: 3,
+                  ),
+                ),
+                child: CircleAvatar(
+                  backgroundColor: Colors.grey[300],
+                  backgroundImage: isLoggedIn
+                      ? const AssetImage('assets/icon/tobareads_icon.png')
+                      : null,
+                  child: !isLoggedIn
+                      ? const Icon(Icons.person, color: Colors.grey, size: 40)
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isLoggedIn ? username : 'Belum Login',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isLoggedIn ? Colors.black : Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isLoggedIn ? 'Pengguna Aktif' : 'Silakan login terlebih dahulu',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isLoggedIn ? Colors.green : Colors.orange,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          // Nama User
-          const Text(
-            'Kesya mutiara',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  // Stats Section dengan angka
+  // Stats Section dengan data dari API
   Widget _buildStatsSection() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _StatItem(number: '12', label: 'Dafita Beasan'),
-          _StatItem(number: '100', label: 'Pengibut'),
-        ],
-      ),
+    if (!AuthService.isLoggedIn) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _StatItem(number: '0', label: 'Dafita Beasan'),
+            _StatItem(number: '0', label: 'Pengibut'),
+          ],
+        ),
+      );
+    }
+
+    return FutureBuilder(
+      future: ApiService.getUserProfile(AuthService.userName),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final profileData = snapshot.data;
+        final dafita = profileData?['dafita_beasan']?.toString() ?? '0';
+        final pengibut = profileData?['pengibut']?.toString() ?? '0';
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _StatItem(number: dafita, label: 'Dafita Beasan'),
+              _StatItem(number: pengibut, label: 'Pengibut'),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  // Menu Section - TERIMA CONTEXT PARAMETER
+  // Menu Section dengan conditional
   Widget _buildMenuSection(BuildContext context) {
     return Container(
       margin: const EdgeInsets.all(20),
@@ -105,6 +177,10 @@ class ProfilPage extends StatelessWidget {
                   icon: Icons.favorite_border,
                   title: 'Cerita Favorit',
                   onTap: () {
+                    if (!AuthService.isLoggedIn) {
+                      _showLoginPrompt(context);
+                      return;
+                    }
                     // Aksi ketika Cerita Favorit ditekan
                   },
                 ),
@@ -115,6 +191,10 @@ class ProfilPage extends StatelessWidget {
                   icon: Icons.book_outlined,
                   title: 'Karya Saya',
                   onTap: () {
+                    if (!AuthService.isLoggedIn) {
+                      _showLoginPrompt(context);
+                      return;
+                    }
                     // Aksi ketika Karya Saya ditekan
                   },
                 ),
@@ -125,7 +205,8 @@ class ProfilPage extends StatelessWidget {
                   icon: Icons.quiz_outlined,
                   title: 'Kuis',
                   onTap: () {
-                    // Aksi ketika Kuis ditekan
+                    // Kuis bisa diakses tanpa login
+                    Navigator.pushNamed(context, '/kuis');
                   },
                 ),
               ),
@@ -133,32 +214,42 @@ class ProfilPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Menu Kelola Cerita
-          _MenuListTile(
-            icon: Icons.edit_note,
-            title: 'Kelola Cerita',
-            onTap: () {
-              // Aksi ketika Kelola Cerita ditekan
-            },
-          ),
-          const SizedBox(height: 8),
+          // Menu Kelola Cerita - hanya untuk user login
+          if (AuthService.isLoggedIn) ...[
+            _MenuListTile(
+              icon: Icons.edit_note,
+              title: 'Kelola Cerita',
+              onTap: () {
+                // Aksi ketika Kelola Cerita ditekan
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
 
-          // Menu Akun Saya
-          _MenuListTile(
-            icon: Icons.person_outline,
-            title: 'Akun Saya',
-            onTap: () {
-              // Aksi ketika Akun Saya ditekan
-            },
-          ),
-          const SizedBox(height: 8),
+          // Menu Akun Saya - hanya untuk user login
+          if (AuthService.isLoggedIn) ...[
+            _MenuListTile(
+              icon: Icons.person_outline,
+              title: 'Akun Saya',
+              onTap: () {
+                // Aksi ketika Akun Saya ditekan
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
 
-          // Menu Ganti Akun / Keluar - PASS CONTEXT KE SINI
+          // Menu Login/Logout - Conditional
           _MenuListTile(
-            icon: Icons.logout,
-            title: 'Ganti Akun / Keluar',
-            titleColor: Colors.red,
-            onTap: () => _showLogoutDialog(context), // PERBAIKAN DI SINI
+            icon: AuthService.isLoggedIn ? Icons.logout : Icons.login,
+            title: AuthService.isLoggedIn ? 'Keluar' : 'Login',
+            titleColor: AuthService.isLoggedIn ? Colors.red : Colors.blue,
+            onTap: () {
+              if (AuthService.isLoggedIn) {
+                _showLogoutDialog(context);
+              } else {
+                _navigateToLogin(context);
+              }
+            },
           ),
         ],
       ),
@@ -182,10 +273,11 @@ class ProfilPage extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                // Logic logout di sini
+                // Logic logout
+                AuthService.logout();
                 Navigator.of(context).pop();
-                // Navigasi ke login page
-                Navigator.of(context).pushReplacementNamed('/');
+                // Refresh page atau navigasi ke home
+                Navigator.of(context).pushReplacementNamed('/home');
               },
               child: const Text('Keluar', style: TextStyle(color: Colors.red)),
             ),
@@ -193,6 +285,39 @@ class ProfilPage extends StatelessWidget {
         );
       },
     );
+  }
+
+  // Prompt untuk login
+  void _showLoginPrompt(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Login Diperlukan'),
+          content: const Text('Anda perlu login untuk mengakses fitur ini.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Nanti'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _navigateToLogin(context);
+              },
+              child: const Text('Login'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Navigasi ke login page
+  void _navigateToLogin(BuildContext context) {
+    Navigator.of(context).pushReplacementNamed('/');
   }
 }
 
@@ -209,10 +334,10 @@ class _StatItem extends StatelessWidget {
       children: [
         Text(
           number,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.blue,
+            color: number == '0' ? Colors.grey : Colors.blue,
           ),
         ),
         const SizedBox(height: 4),
@@ -222,7 +347,7 @@ class _StatItem extends StatelessWidget {
   }
 }
 
-// Widget untuk menu button (Cerita Favorit, Karya Saya, Kuis)
+// Widget untuk menu button
 class _MenuButton extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -269,7 +394,7 @@ class _MenuButton extends StatelessWidget {
   }
 }
 
-// Widget untuk menu list tile (Kelola Cerita, Akun Saya, Logout)
+// Widget untuk menu list tile
 class _MenuListTile extends StatelessWidget {
   final IconData icon;
   final String title;

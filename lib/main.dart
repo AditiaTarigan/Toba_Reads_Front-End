@@ -1,29 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'services/auth_service.dart';
 import 'pages/login_page.dart';
 import 'pages/register_page.dart';
 import 'pages/home_page.dart';
-import 'main.dart'; // Import navigatorKey dan navigateTo
-import 'package:tobareads/pages/kuis_page.dart';
 import 'pages/loading_screen.dart';
 import 'pages/profil_page.dart';
+import 'pages/kuis_page.dart';
 
-final GlobalKey<NavigatorState> navigatorKey =
-    GlobalKey<NavigatorState>(); // Definisikan navigatorKey di sini
+// Definisikan navigatorKey di luar main function
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final prefs = await SharedPreferences.getInstance();
-  final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+  // Initialize AuthService sebelum runApp
+  await AuthService.initialize();
 
-  runApp(MyApp(isLoggedIn: isLoggedIn));
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final bool isLoggedIn;
-
-  const MyApp({Key? key, required this.isLoggedIn}) : super(key: key);
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -31,14 +29,13 @@ class MyApp extends StatelessWidget {
       navigatorKey: navigatorKey, // Kaitkan navigatorKey dengan MaterialApp
       debugShowCheckedModeBanner: false,
       title: 'TobaReads',
-      initialRoute: isLoggedIn ? '/home' : '/',
-
+      initialRoute: '/loading',
       routes: {
         '/loading': (context) => const LoadingScreenWrapper(),
         '/': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/home': (context) => const HomePage(),
-        '/profile': (context) => const ProfilPage(), // TAMBAH INI
+        '/profile': (context) => const ProfilPage(),
         '/kuis': (context) => const KuisPage(),
       },
     );
@@ -56,16 +53,25 @@ class _LoadingScreenWrapperState extends State<LoadingScreenWrapper> {
   @override
   void initState() {
     super.initState();
-    _redirectToHome(); // UBAH INI: langsung ke home
+    _checkAuthStatus();
   }
 
-  void _redirectToHome() async {
-    // Langsung redirect ke HomePage setelah loading selesai
-    await Future.delayed(const Duration(seconds: 3));
+  void _checkAuthStatus() async {
+    // Cek status login dari SharedPreferences
+    final isLoggedIn = await AuthService.checkLoginStatus();
+
+    await Future.delayed(const Duration(seconds: 2));
 
     if (mounted) {
-      // UBAH INI: ganti '/' dengan '/home'
-      Navigator.of(context).pushReplacementNamed('/home');
+      if (isLoggedIn) {
+        // Update juga variable static
+        AuthService.isLoggedIn = true;
+        AuthService.userName = await AuthService.getUsername();
+
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        Navigator.of(context).pushReplacementNamed('/');
+      }
     }
   }
 
