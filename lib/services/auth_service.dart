@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  final String baseUrl = "http://10.0.2.2:8000/api";
+  static final String baseUrl = "http://10.0.2.2:8000/api";
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
@@ -48,5 +48,16 @@ class AuthService {
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+  }
+
+  static Future<List<dynamic>> getBooks() async {
+    final response = await http.get(Uri.parse("$baseUrl/buku"));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data;
+    } else {
+      throw Exception("Gagal mengambil buku");
+    }
   }
 }

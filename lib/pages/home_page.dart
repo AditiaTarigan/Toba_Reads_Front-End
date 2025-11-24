@@ -9,20 +9,36 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String username = "Pengguna";
+  String username = "selamat datang di Tobareads";
+
+  // DATA BUKU
+  List<dynamic> books = [];
+  bool isLoadingBooks = true;
 
   @override
   void initState() {
     super.initState();
     loadUser();
+    loadBooks();
   }
 
   Future<void> loadUser() async {
     final data = await AuthService.getUserData();
-
     setState(() {
-      username = data?['nama'] ?? "Pengguna";
+      username = data?['nama'] ?? "selamat datang di Tobareads";
     });
+  }
+
+  Future<void> loadBooks() async {
+    try {
+      List<dynamic> result = await AuthService.getBooks();
+      setState(() {
+        books = result;
+        isLoadingBooks = false;
+      });
+    } catch (e) {
+      setState(() => isLoadingBooks = false);
+    }
   }
 
   @override
@@ -62,14 +78,16 @@ class _HomePageState extends State<HomePage> {
             children: [
               const Text(
                 'Halo,',
-                style: TextStyle(fontSize: 14, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color.fromARGB(255, 0, 0, 0),
+                ),
               ),
               Text(
                 username,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
                 ),
               ),
             ],
@@ -85,7 +103,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // SECTION 1 – RECOMMENDED
+  // RECOMMENDED (horizontal)
   Widget _buildRecommendedSection() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -97,37 +115,32 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
+
           SizedBox(
             height: 180,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: const [
-                _StoryCard(
-                  title: 'Legenda Danau Toba',
-                  author: 'Celine Bellen',
-                  imageUrl: 'https://via.placeholder.com/120x150',
-                ),
-                SizedBox(width: 12),
-                _StoryCard(
-                  title: 'Bertang',
-                  author: 'Tamara Arnault',
-                  imageUrl: 'https://via.placeholder.com/120x150',
-                ),
-                SizedBox(width: 12),
-                _StoryCard(
-                  title: 'Bertuan',
-                  author: 'Geraldine',
-                  imageUrl: 'https://via.placeholder.com/120x150',
-                ),
-              ],
-            ),
+            child: isLoadingBooks
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: books.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, index) {
+                      final b = books[index];
+                      return _StoryCard(
+                        title: b['judul'] ?? 'Tanpa Judul',
+                        author: b['penulis'] ?? 'Tidak diketahui',
+                        imageUrl:
+                            b['cover'] ?? 'https://via.placeholder.com/120x150',
+                      );
+                    },
+                  ),
           ),
         ],
       ),
     );
   }
 
-  // SECTION 2 – POPULAR STORIES
+  // POPULAR STORIES (vertical 3 buku)
   Widget _buildPopularStoriesSection() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -139,21 +152,28 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          Column(
-            children: const [
-              _StoryListItem(title: 'Bertang', author: 'Author 1'),
-              SizedBox(height: 8),
-              _StoryListItem(title: 'Bertang', author: 'Author 2'),
-              SizedBox(height: 8),
-              _StoryListItem(title: 'Bertuan', author: 'Author 3'),
-            ],
-          ),
+
+          isLoadingBooks
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                  children: books.take(3).map((b) {
+                    return Column(
+                      children: [
+                        _StoryListItem(
+                          title: b['judul'] ?? "Tanpa Judul",
+                          author: b['penulis'] ?? "Tidak diketahui",
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    );
+                  }).toList(),
+                ),
         ],
       ),
     );
   }
 
-  // SECTION 3 – LAST READ
+  // LAST READ (placeholder)
   Widget _buildLastReadSection() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -165,20 +185,24 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          Column(
-            children: const [
-              _StoryListItem(title: 'Bertang', author: 'Author A'),
-              SizedBox(height: 8),
-              _StoryListItem(title: 'Bertang', author: 'Author B'),
-              SizedBox(height: 8),
-              _StoryListItem(title: 'Bertuan', author: 'Author C'),
-            ],
+
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text(
+              "Belum ada buku yang kamu baca.",
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
         ],
       ),
     );
   }
 
+  // BOTTOM NAV
   Widget _buildBottomNavigationBar(BuildContext context) {
     return BottomNavigationBar(
       currentIndex: 0,
@@ -260,12 +284,12 @@ class _StoryCard extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -283,7 +307,7 @@ class _StoryCard extends StatelessWidget {
   }
 }
 
-// ITEM VERTIKAL
+// ITEM LIST VERTIKAL
 class _StoryListItem extends StatelessWidget {
   final String title;
   final String author;
