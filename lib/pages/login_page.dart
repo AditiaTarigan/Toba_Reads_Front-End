@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../api/api_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -23,26 +23,32 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => loading = true);
+    if (!_formKey.currentState!.validate()) return;
 
-      final response = await ApiService.login(
-        emailController.text,
-        passwordController.text,
+    setState(() => loading = true);
+
+    final response = await AuthService().login(
+      emailController.text,
+      passwordController.text,
+    );
+
+    setState(() => loading = false);
+
+    if (response['success'] == true) {
+      final user = response['user']; // dari AuthService
+      final token = response['token'];
+
+      // Simpan ke SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString("nama", user['nama'] ?? "");
+      await prefs.setInt("id_user", user['id_user'] ?? 0);
+      await prefs.setString("token", token ?? "");
+
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(response['message'] ?? "Login gagal")),
       );
-
-      setState(() => loading = false);
-
-      if (response['success'] == true) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isLoggedIn', true);
-        Navigator.pushReplacementNamed(context, '/home');
-      } else {
-        String errorMessage = response['message'] ?? "Login gagal";
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(errorMessage)));
-      }
     }
   }
 
@@ -56,7 +62,6 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ========== LOGO & TITLE ==========
               Center(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 20.0),
@@ -85,7 +90,6 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 20),
 
-              // ========== FORM BOX ==========
               Container(
                 decoration: BoxDecoration(
                   color: const Color(0xFF2A486B),
@@ -109,7 +113,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 15),
 
-                      // EMAIL
                       TextFormField(
                         controller: emailController,
                         decoration: InputDecoration(
@@ -140,7 +143,6 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 10),
 
-                      // PASSWORD
                       TextFormField(
                         controller: passwordController,
                         obscureText: true,
@@ -178,9 +180,8 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 20),
 
-                      // TOMBOL LOGIN
                       ElevatedButton(
-                        onPressed: login,
+                        onPressed: loading ? null : login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF6DADE7),
                           minimumSize: const Size(double.infinity, 50),
@@ -199,7 +200,6 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 20),
 
-                      // Divider
                       Row(
                         children: const [
                           Expanded(child: Divider(color: Colors.white)),
@@ -216,7 +216,6 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 10),
 
-                      // SOSMED ICONS
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: const [
@@ -233,9 +232,10 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 20),
 
                       GestureDetector(
-                        onTap: () {
-                          Navigator.pushReplacementNamed(context, '/register');
-                        },
+                        onTap: () => Navigator.pushReplacementNamed(
+                          context,
+                          '/register',
+                        ),
                         child: const Text(
                           "Belum punya akun? Daftar",
                           style: TextStyle(

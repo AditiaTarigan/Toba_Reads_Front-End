@@ -1,50 +1,52 @@
-// lib/services/auth_service.dart
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  static bool isLoggedIn = false;
-  static String userName = '';
+  final String baseUrl = "http://10.0.2.2:8000/api";
 
-  // Method untuk initialize status login dari SharedPreferences
-  static Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    userName = prefs.getString('userName') ?? '';
+  Future<Map<String, dynamic>> login(String email, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/login"),
+        body: {"email": email, "password": password},
+      );
+
+      final data = jsonDecode(response.body);
+      print("RESPONSE BODY: ${response.body}");
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        final prefs = await SharedPreferences.getInstance();
+
+        final user = data["data"]["user"];
+        final token = data["data"]["token"];
+
+        await prefs.setString("token", token ?? "");
+        await prefs.setString("nama", user["nama"] ?? "");
+        await prefs.setInt("id_user", user["id_user"] ?? 0);
+
+        return {"success": true, "user": user, "token": token};
+      } else {
+        return {"success": false, "message": data['message'] ?? "Login gagal"};
+      }
+    } catch (e) {
+      return {"success": false, "message": "Error: $e"};
+    }
   }
 
-  // Method untuk login
-  static Future<void> login(String name) async {
+  static Future<Map<String, dynamic>?> getUserData() async {
     final prefs = await SharedPreferences.getInstance();
+    final nama = prefs.getString("nama");
+    final idUser = prefs.getInt("id_user");
+    final token = prefs.getString("token");
 
-    isLoggedIn = true;
-    userName = name;
+    if (nama == null || token == null) return null;
 
-    // Simpan ke SharedPreferences
-    await prefs.setBool('isLoggedIn', true);
-    await prefs.setString('userName', name);
+    return {"nama": nama, "id_user": idUser, "token": token};
   }
 
-  // Method untuk logout
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-
-    isLoggedIn = false;
-    userName = '';
-
-    // Hapus dari SharedPreferences
-    await prefs.setBool('isLoggedIn', false);
-    await prefs.remove('userName');
-  }
-
-  // Method untuk cek status login
-  static Future<bool> checkLoginStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('isLoggedIn') ?? false;
-  }
-
-  // Method untuk get username
-  static Future<String> getUsername() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('userName') ?? '';
+    await prefs.clear();
   }
 }

@@ -1,7 +1,29 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  String username = "Pengguna";
+
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
+  }
+
+  Future<void> loadUser() async {
+    final data = await AuthService.getUserData();
+
+    setState(() {
+      username = data?['nama'] ?? "Pengguna";
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,45 +34,39 @@ class HomePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header dengan nama user
               _buildHeader(),
-
-              // Section "Kamu Mungkin Suka"
               _buildRecommendedSection(),
-
-              // Section "Cerita Paling Banyak Dibaca"
               _buildPopularStoriesSection(),
-
-              // Section "Terakhir Dibaca"
               _buildLastReadSection(),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(
-        context,
-      ), // PASS CONTEXT KE SINI
+      bottomNavigationBar: _buildBottomNavigationBar(context),
     );
   }
 
-  // Header dengan nama user
+  // HEADER
   Widget _buildHeader() {
-    return const Padding(
-      padding: EdgeInsets.all(16.0),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
       child: Row(
         children: [
-          CircleAvatar(
+          const CircleAvatar(
             radius: 20,
-            backgroundImage: NetworkImage('https://via.placeholder.com/40'),
+            backgroundImage: AssetImage('assets/icon/tobareads_icon.png'),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Halo,', style: TextStyle(fontSize: 14, color: Colors.grey)),
+              const Text(
+                'Halo,',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
               Text(
-                'Carl Judul',
-                style: TextStyle(
+                username,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
@@ -58,14 +74,18 @@ class HomePage extends StatelessWidget {
               ),
             ],
           ),
-          Spacer(),
-          Icon(Icons.notifications_outlined, size: 28, color: Colors.grey),
+          const Spacer(),
+          const Icon(
+            Icons.notifications_outlined,
+            size: 28,
+            color: Colors.grey,
+          ),
         ],
       ),
     );
   }
 
-  // Section "Kamu Mungkin Suka"
+  // SECTION 1 – RECOMMENDED
   Widget _buildRecommendedSection() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -74,11 +94,7 @@ class HomePage extends StatelessWidget {
         children: [
           const Text(
             'Kamu Mungkin Suka',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -111,7 +127,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Section "Cerita Paling Banyak Dibaca"
+  // SECTION 2 – POPULAR STORIES
   Widget _buildPopularStoriesSection() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -120,11 +136,7 @@ class HomePage extends StatelessWidget {
         children: [
           const Text(
             'Cerita Paling Banyak Dibaca',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Column(
@@ -141,7 +153,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Section "Terakhir Dibaca"
+  // SECTION 3 – LAST READ
   Widget _buildLastReadSection() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -150,11 +162,7 @@ class HomePage extends StatelessWidget {
         children: [
           const Text(
             'Terakhir Dibaca',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Column(
@@ -171,17 +179,12 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Bottom Navigation Bar - TERIMA PARAMETER CONTEXT
   Widget _buildBottomNavigationBar(BuildContext context) {
     return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      currentIndex: 0, // Home selected
+      currentIndex: 0,
       selectedItemColor: Colors.blue,
       unselectedItemColor: Colors.grey,
-      onTap: (index) {
-        // PANGGIL METHOD _onItemTapped DENGAN CONTEXT
-        _onItemTapped(index, context);
-      },
+      onTap: (index) => _onItemTapped(index, context),
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Cari'),
@@ -194,29 +197,21 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Method untuk menangani tap pada bottom navigation - PASTIKAN DI DALAM CLASS
   void _onItemTapped(int index, BuildContext context) {
     switch (index) {
-      case 0:
-        // Already on home page, do nothing
-        break;
-      case 1:
-        // Navigate to search page
-        // Navigator.pushNamed(context, '/search');
+      case 3:
+        Navigator.pushNamed(context, '/profile');
         break;
       case 2:
-        // Navigate to quiz page
         Navigator.pushNamed(context, '/kuis');
         break;
-      case 3:
-        // Navigate to profile page
-        Navigator.pushNamed(context, '/profile');
+      default:
         break;
     }
   }
 }
 
-// Widget untuk card story horizontal
+// CARD HORIZONTAL
 class _StoryCard extends StatelessWidget {
   final String title;
   final String author;
@@ -246,7 +241,6 @@ class _StoryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Gambar cover buku
           ClipRRect(
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(8),
@@ -259,9 +253,8 @@ class _StoryCard extends StatelessWidget {
               fit: BoxFit.cover,
             ),
           ),
-          // Info buku
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -290,7 +283,7 @@ class _StoryCard extends StatelessWidget {
   }
 }
 
-// Widget untuk list item story vertikal
+// ITEM VERTIKAL
 class _StoryListItem extends StatelessWidget {
   final String title;
   final String author;
@@ -308,7 +301,6 @@ class _StoryListItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Placeholder untuk gambar kecil
           Container(
             width: 40,
             height: 40,
