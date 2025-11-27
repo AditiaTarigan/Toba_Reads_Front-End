@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'upload_page.dart';
+import '../services/cerita_service.dart'; // Pastikan path sesuai
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -29,15 +31,54 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  // Di dalam loadBooks() method:
   Future<void> loadBooks() async {
     try {
-      List<dynamic> result = await AuthService.getBooks();
+      setState(() => isLoadingBooks = true);
+
+      // GUNAKAN CeritaService.getBooks()
+      List<dynamic> result = await CeritaService.getBooks();
+
       setState(() {
         books = result;
         isLoadingBooks = false;
       });
     } catch (e) {
       setState(() => isLoadingBooks = false);
+      print('Error loading books: $e');
+    }
+  }
+
+  // PERBAIKAN: Tambahkan import untuk UnggahKaryaPage
+  Future<void> _navigateToUploadKarya() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const UnggahKaryaPage()),
+    );
+
+    // PERBAIKAN: Refresh data jika upload berhasil
+    if (result == true) {
+      await loadBooks();
+
+      // HAPUS DUPLIKAT SNACKBAR - cukup satu saja
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Karya berhasil ditambahkan!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Tampilkan snackbar konfirmasi
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Karya berhasil ditambahkan!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -63,6 +104,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // HEADER
+  // HEADER - PERBAIKI BAGIAN INI
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -73,26 +115,31 @@ class _HomePageState extends State<HomePage> {
             backgroundImage: AssetImage('assets/icon/tobareads_icon.png'),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Halo,',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color.fromARGB(255, 0, 0, 0),
+          Expanded(
+            // TAMBAH EXPANDED DI SINI
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Halo,',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color.fromARGB(255, 0, 0, 0),
+                  ),
                 ),
-              ),
-              Text(
-                username,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                Text(
+                  username,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis, // TAMBAH INI
+                  maxLines: 1, // TAMBAH INI
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: 8),
           const Icon(
             Icons.notifications_outlined,
             size: 28,
@@ -103,7 +150,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // RECOMMENDED (horizontal)
+  // ALTERNATIF: ListView.separated dengan padding
   Widget _buildRecommendedSection() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -120,17 +167,33 @@ class _HomePageState extends State<HomePage> {
             height: 180,
             child: isLoadingBooks
                 ? const Center(child: CircularProgressIndicator())
-                : ListView.separated(
+                : books.isEmpty
+                ? _buildEmptyState()
+                : ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: books.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    physics:
+                        const AlwaysScrollableScrollPhysics(), // ✅ FORCE SCROLL
+
+                    itemCount: books.length + 1, // ✅ TAMBAH 1 UNTUK EXTRA SPACE
                     itemBuilder: (context, index) {
+                      // JIKA INDEX TERAKHIR, BUAT EMPTY SPACE
+                      if (index == books.length) {
+                        return const SizedBox(
+                          width: 16,
+                        ); // ✅ EXTRA SPACE DI AKHIR
+                      }
+
                       final b = books[index];
-                      return _StoryCard(
-                        title: b['judul'] ?? 'Tanpa Judul',
-                        author: b['penulis'] ?? 'Tidak diketahui',
-                        imageUrl:
-                            b['cover'] ?? 'https://via.placeholder.com/120x150',
+                      return Container(
+                        width: 140,
+                        margin: EdgeInsets.only(right: 12),
+                        child: _StoryCard(
+                          title: b['judul'] ?? 'Tanpa Judul',
+                          author: b['user']?['nama'] ?? 'Tidak diketahui',
+                          imageUrl:
+                              b['gambar'] ??
+                              'https://via.placeholder.com/120x150',
+                        ),
                       );
                     },
                   ),
@@ -155,13 +218,16 @@ class _HomePageState extends State<HomePage> {
 
           isLoadingBooks
               ? const Center(child: CircularProgressIndicator())
+              : books.isEmpty
+              ? _buildEmptyState()
               : Column(
-                  children: books.take(3).map((b) {
+                  children: books.map((b) {
+                    // ✅ HAPUS .take(3) UNTUK TAMPIL SEMUA
                     return Column(
                       children: [
                         _StoryListItem(
                           title: b['judul'] ?? "Tanpa Judul",
-                          author: b['penulis'] ?? "Tidak diketahui",
+                          author: b['user']?['nama'] ?? "Tidak diketahui",
                         ),
                         const SizedBox(height: 8),
                       ],
@@ -202,6 +268,34 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // **WIDGET BARU: Empty state ketika tidak ada buku**
+  Widget _buildEmptyState() {
+    return Container(
+      height: 120,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.book, size: 40, color: Colors.grey),
+            const SizedBox(height: 8),
+            const Text(
+              'Belum ada cerita',
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 4),
+            TextButton(
+              onPressed: _navigateToUploadKarya,
+              child: const Text(
+                'Upload Cerita Pertamamu',
+                style: TextStyle(color: Color(0xFF2A486B)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // BOTTOM NAV
   Widget _buildBottomNavigationBar(BuildContext context) {
     return BottomNavigationBar(
@@ -236,6 +330,7 @@ class _HomePageState extends State<HomePage> {
 }
 
 // CARD HORIZONTAL
+// CARD HORIZONTAL - PERLEBAR
 class _StoryCard extends StatelessWidget {
   final String title;
   final String author;
@@ -250,7 +345,7 @@ class _StoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 120,
+      width: 140, // ✅ PERLEBAR DARI 120 KE 140
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         color: Colors.white,
@@ -272,7 +367,7 @@ class _StoryCard extends StatelessWidget {
             ),
             child: Image.network(
               imageUrl,
-              width: 120,
+              width: 140, // ✅ SESUAIKAN
               height: 120,
               fit: BoxFit.cover,
             ),

@@ -3,9 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:tobareads/main.dart'; // Import MyApp
-import 'package:tobareads/pages/login_page.dart';
+import 'package:tobareads/auth_pages/login_page.dart';
 import 'package:tobareads/pages/home_page.dart';
-import 'package:tobareads/pages/register_page.dart';
+import 'package:tobareads/auth_pages/register_page.dart';
 
 class TestApp extends StatelessWidget {
   final bool isLoggedIn;

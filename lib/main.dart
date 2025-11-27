@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'services/auth_service.dart';
-import 'pages/login_page.dart';
-import 'pages/register_page.dart';
+import 'auth_pages/login_page.dart';
+import 'auth_pages/register_page.dart';
 import 'pages/home_page.dart';
 import 'pages/profil_page.dart';
 import 'pages/kuis_page.dart';
+import 'pages/upload_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +27,7 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const HomePage(),
         '/profile': (context) => const ProfilPage(),
         '/kuis': (context) => const KuisPage(),
+        '/upload': (context) => const UnggahKaryaPage(),
       },
     );
   }
