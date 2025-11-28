@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'upload_page.dart';
-import '../services/cerita_service.dart'; // Pastikan path sesuai
+import '../services/cerita_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,8 +12,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String username = "selamat datang di Tobareads";
-
-  // DATA BUKU
   List<dynamic> books = [];
   bool isLoadingBooks = true;
 
@@ -31,14 +29,10 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // Di dalam loadBooks() method:
   Future<void> loadBooks() async {
     try {
       setState(() => isLoadingBooks = true);
-
-      // GUNAKAN CeritaService.getBooks()
       List<dynamic> result = await CeritaService.getBooks();
-
       setState(() {
         books = result;
         isLoadingBooks = false;
@@ -49,18 +43,14 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // PERBAIKAN: Tambahkan import untuk UnggahKaryaPage
   Future<void> _navigateToUploadKarya() async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const UnggahKaryaPage()),
     );
 
-    // PERBAIKAN: Refresh data jika upload berhasil
     if (result == true) {
       await loadBooks();
-
-      // HAPUS DUPLIKAT SNACKBAR - cukup satu saja
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -70,15 +60,6 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       }
-
-      // Tampilkan snackbar konfirmasi
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Karya berhasil ditambahkan!'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
     }
   }
 
@@ -87,24 +68,28 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              _buildRecommendedSection(),
-              _buildPopularStoriesSection(),
-              _buildLastReadSection(),
-            ],
-          ),
+        // ListView utama (vertikal) — mencegah konflik gesture horizontal
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            _buildHeader(),
+            _buildRecommendedSection(),
+            _buildPopularStoriesSection(),
+            _buildLastReadSection(),
+          ],
         ),
       ),
       bottomNavigationBar: _buildBottomNavigationBar(context),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _navigateToUploadKarya,
+        backgroundColor: const Color(0xFF2A486B),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
   // HEADER
-  // HEADER - PERBAIKI BAGIAN INI
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -116,16 +101,12 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            // TAMBAH EXPANDED DI SINI
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'Halo,',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color.fromARGB(255, 0, 0, 0),
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.black),
                 ),
                 Text(
                   username,
@@ -133,8 +114,8 @@ class _HomePageState extends State<HomePage> {
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
-                  overflow: TextOverflow.ellipsis, // TAMBAH INI
-                  maxLines: 1, // TAMBAH INI
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ],
             ),
@@ -150,7 +131,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ALTERNATIF: ListView.separated dengan padding
+  // RECOMMENDED SECTION
   Widget _buildRecommendedSection() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -162,7 +143,6 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-
           SizedBox(
             height: 180,
             child: isLoadingBooks
@@ -171,27 +151,21 @@ class _HomePageState extends State<HomePage> {
                 ? _buildEmptyState()
                 : ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    physics:
-                        const AlwaysScrollableScrollPhysics(), // ✅ FORCE SCROLL
-
-                    itemCount: books.length + 1, // ✅ TAMBAH 1 UNTUK EXTRA SPACE
+                    padding: const EdgeInsets.only(right: 16),
+                    itemCount: books.length,
                     itemBuilder: (context, index) {
-                      // JIKA INDEX TERAKHIR, BUAT EMPTY SPACE
-                      if (index == books.length) {
-                        return const SizedBox(
-                          width: 16,
-                        ); // ✅ EXTRA SPACE DI AKHIR
-                      }
-
                       final b = books[index];
                       return Container(
-                        width: 140,
-                        margin: EdgeInsets.only(right: 12),
+                        width: 150,
+                        margin: EdgeInsets.only(
+                          right: 12,
+                          left: index == 0 ? 8 : 0,
+                        ),
                         child: _StoryCard(
                           title: b['judul'] ?? 'Tanpa Judul',
                           author: b['user']?['nama'] ?? 'Tidak diketahui',
                           imageUrl:
-                              b['gambar'] ??
+                              b['gambar_url'] ??
                               'https://via.placeholder.com/120x150',
                         ),
                       );
@@ -203,7 +177,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // POPULAR STORIES (vertical 3 buku)
+  // POPULAR STORIES SECTION
   Widget _buildPopularStoriesSection() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -215,31 +189,41 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-
           isLoadingBooks
               ? const Center(child: CircularProgressIndicator())
               : books.isEmpty
               ? _buildEmptyState()
-              : Column(
-                  children: books.map((b) {
-                    // ✅ HAPUS .take(3) UNTUK TAMPIL SEMUA
-                    return Column(
-                      children: [
-                        _StoryListItem(
-                          title: b['judul'] ?? "Tanpa Judul",
-                          author: b['user']?['nama'] ?? "Tidak diketahui",
+              : SizedBox(
+                  height: 180,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.only(right: 16),
+                    itemCount: books.length,
+                    itemBuilder: (context, index) {
+                      final b = books[index];
+                      return Container(
+                        width: 150,
+                        margin: EdgeInsets.only(
+                          right: 12,
+                          left: index == 0 ? 8 : 0,
                         ),
-                        const SizedBox(height: 8),
-                      ],
-                    );
-                  }).toList(),
+                        child: _StoryCard(
+                          title: b['judul'] ?? 'Tanpa Judul',
+                          author: b['user']?['nama'] ?? 'Tidak diketahui',
+                          imageUrl:
+                              b['gambar_url'] ??
+                              'https://via.placeholder.com/120x150',
+                        ),
+                      );
+                    },
+                  ),
                 ),
         ],
       ),
     );
   }
 
-  // LAST READ (placeholder)
+  // LAST READ SECTION
   Widget _buildLastReadSection() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -251,7 +235,6 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -268,7 +251,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // **WIDGET BARU: Empty state ketika tidak ada buku**
+  // EMPTY STATE (DITAMBAHKAN — dipanggil ketika books.isEmpty)
   Widget _buildEmptyState() {
     return Container(
       height: 120,
@@ -296,7 +279,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // BOTTOM NAV
+  // BOTTOM NAVIGATION BAR
   Widget _buildBottomNavigationBar(BuildContext context) {
     return BottomNavigationBar(
       currentIndex: 0,
@@ -329,8 +312,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// CARD HORIZONTAL
-// CARD HORIZONTAL - PERLEBAR
+// HORIZONTAL STORY CARD (tidak diubah)
 class _StoryCard extends StatelessWidget {
   final String title;
   final String author;
@@ -345,15 +327,15 @@ class _StoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 140, // ✅ PERLEBAR DARI 120 KE 140
+      width: 150,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: Colors.grey.withOpacity(0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -367,9 +349,17 @@ class _StoryCard extends StatelessWidget {
             ),
             child: Image.network(
               imageUrl,
-              width: 140, // ✅ SESUAIKAN
+              width: 150,
               height: 120,
               fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 150,
+                  height: 120,
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.book, color: Colors.grey),
+                );
+              },
             ),
           ),
           Padding(
@@ -379,7 +369,7 @@ class _StoryCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
@@ -396,60 +386,6 @@ class _StoryCard extends StatelessWidget {
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-// ITEM LIST VERTIKAL
-class _StoryListItem extends StatelessWidget {
-  final String title;
-  final String author;
-
-  const _StoryListItem({required this.title, required this.author});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: const Icon(Icons.book, color: Colors.grey, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  author,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
         ],
       ),
     );

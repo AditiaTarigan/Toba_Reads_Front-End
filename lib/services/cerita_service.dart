@@ -42,7 +42,7 @@ class CeritaService {
       if (imagePath != null && imagePath.isNotEmpty) {
         try {
           request.files.add(
-            await http.MultipartFile.fromPath('gambar', imagePath),
+            await http.MultipartFile.fromPath('file_lampiran', imagePath),
           );
           print('Image added: $imagePath');
         } catch (e) {

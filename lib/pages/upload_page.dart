@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/cerita_service.dart';
+import 'package:image_picker/image_picker.dart'; // ✅ TAMBAH IMPORT
+import 'dart:io';
 
 class UnggahKaryaPage extends StatefulWidget {
   const UnggahKaryaPage({Key? key}) : super(key: key);
@@ -15,6 +17,8 @@ class _UnggahKaryaPageState extends State<UnggahKaryaPage> {
   String? _selectedImage;
   bool _isLoading = false;
   String _userEmail = '';
+
+  final ImagePicker _picker = ImagePicker(); // ✅ TAMBAH INI
 
   @override
   void initState() {
@@ -104,7 +108,21 @@ class _UnggahKaryaPageState extends State<UnggahKaryaPage> {
                   )
                 : ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.network(_selectedImage!, fit: BoxFit.cover),
+                    child: Image.file(
+                      // ✅ GUNAKAN Image.file BUKAN Image.network
+                      File(_selectedImage!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.error, color: Colors.red),
+                            SizedBox(height: 8),
+                            Text('Gagal memuat gambar'),
+                          ],
+                        );
+                      },
+                    ),
                   ),
           ),
         ),
@@ -215,16 +233,32 @@ class _UnggahKaryaPageState extends State<UnggahKaryaPage> {
     );
   }
 
-  void _pickImage() {
-    print('Picking image...');
-    // TODO: Implement image picker dengan package image_picker
-    // Contoh:
-    // final image = await ImagePicker().pickImage(source: ImageSource.gallery);
-    // if (image != null) {
-    //   setState(() {
-    //     _selectedImage = image.path;
-    //   });
-    // }
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery, // ✅ DARI GALLERY
+        maxWidth: 800,
+        maxHeight: 600,
+        imageQuality: 80,
+      );
+
+      if (image != null) {
+        setState(() {
+          _selectedImage = image.path; // ✅ SIMPAN PATH GAMBAR
+        });
+        print('Image selected: ${image.path}');
+      } else {
+        print('No image selected');
+      }
+    } catch (e) {
+      print('Error picking image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memilih gambar: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   // Di dalam _submitKarya() method, ganti bagian:
@@ -247,6 +281,12 @@ class _UnggahKaryaPageState extends State<UnggahKaryaPage> {
     });
 
     try {
+      // ✅ KONVERSI PATH KE FILE JIKA ADA GAMBAR
+      File? imageFile;
+      if (_selectedImage != null) {
+        imageFile = File(_selectedImage!);
+      }
+
       await CeritaService.uploadCerita(judul, isi, _selectedImage);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -256,10 +296,8 @@ class _UnggahKaryaPageState extends State<UnggahKaryaPage> {
         ),
       );
 
-      // PERBAIKAN: Tunggu sebentar sebelum kembali
       await Future.delayed(const Duration(milliseconds: 1500));
 
-      // Kembali ke homepage dengan result true
       if (mounted) {
         Navigator.of(context).pop(true);
       }
