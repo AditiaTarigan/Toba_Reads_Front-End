@@ -17,8 +17,31 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
+  // TAMBAHAN: Controller untuk field baru
+  final TextEditingController _bioController = TextEditingController();
+  final TextEditingController _tanggalLahirController = TextEditingController();
+
+  // TAMBAHAN: Variabel untuk jenis kelamin
+  String? _selectedJenisKelamin;
+
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+
+  // TAMBAHAN: Fungsi untuk memilih tanggal
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(1997),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _tanggalLahirController.text =
+            "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +117,23 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 12),
 
+                      // TAMBAHAN: Bio Field
+                      _buildInputField(
+                        "Bio (Opsional)",
+                        Icons.info,
+                        _bioController,
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 12),
+
+                      // TAMBAHAN: Jenis Kelamin Dropdown
+                      _buildJenisKelaminDropdown(),
+                      const SizedBox(height: 12),
+
+                      // TAMBAHAN: Tanggal Lahir Field dengan Date Picker
+                      _buildTanggalLahirField(context),
+                      const SizedBox(height: 12),
+
                       _buildInputField(
                         "Kata Sandi",
                         Icons.lock,
@@ -140,12 +180,21 @@ class _RegisterPageState extends State<RegisterPage> {
                                     _isLoading = true;
                                   });
 
-                                  // ✅ PERBAIKI: GUNAKAN NAMED PARAMETERS
+                                  // ✅ PERBAIKI: GUNAKAN NAMED PARAMETERS DENGAN FIELD BARU
                                   final response = await ApiService.register(
                                     _nameController.text,
                                     _emailController.text,
                                     _passwordController.text,
                                     _phoneController.text,
+                                    _bioController.text.isEmpty
+                                        ? null
+                                        : _bioController.text,
+                                    _selectedJenisKelamin,
+                                    _tanggalLahirController.text.isEmpty
+                                        ? null
+                                        : _formatDateForApi(
+                                            _tanggalLahirController.text,
+                                          ),
                                   );
 
                                   setState(() {
@@ -217,17 +266,92 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  // TAMBAHAN: Widget untuk dropdown jenis kelamin
+  Widget _buildJenisKelaminDropdown() {
+    return DropdownButtonFormField<String>(
+      value: _selectedJenisKelamin,
+      decoration: InputDecoration(
+        hintText: "Jenis Kelamin (Opsional)",
+        hintStyle: const TextStyle(color: Colors.white70),
+        prefixIcon: const Icon(Icons.person_outline, color: Colors.white),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.1),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Colors.white),
+        ),
+      ),
+      dropdownColor: const Color(0xFF2A486B),
+      style: const TextStyle(color: Colors.white),
+      items: [
+        DropdownMenuItem(
+          value: null,
+          child: Text(
+            "Pilih Jenis Kelamin",
+            style: TextStyle(color: Colors.white70),
+          ),
+        ),
+        DropdownMenuItem(
+          value: 'Laki-laki',
+          child: Text('Laki-laki', style: TextStyle(color: Colors.white)),
+        ),
+        DropdownMenuItem(
+          value: 'Perempuan',
+          child: Text('Perempuan', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+      onChanged: (String? value) {
+        setState(() {
+          _selectedJenisKelamin = value;
+        });
+      },
+      validator: (value) {
+        // Opsional, tidak perlu validasi required
+        return null;
+      },
+    );
+  }
+
+  // TAMBAHAN: Widget untuk tanggal lahir dengan date picker
+  Widget _buildTanggalLahirField(BuildContext context) {
+    return TextFormField(
+      controller: _tanggalLahirController,
+      readOnly: true, // Agar keyboard tidak muncul
+      decoration: InputDecoration(
+        hintText: "Tanggal Lahir (Opsional)",
+        hintStyle: const TextStyle(color: Colors.white70),
+        prefixIcon: const Icon(Icons.calendar_today, color: Colors.white),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.1),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Colors.white),
+        ),
+      ),
+      style: const TextStyle(color: Colors.white),
+      onTap: () {
+        _selectDate(context);
+      },
+      validator: (value) {
+        // Opsional, tidak perlu validasi required
+        return null;
+      },
+    );
+  }
+
   Widget _buildInputField(
     String hint,
     IconData icon,
     TextEditingController controller, {
     bool obscure = false,
     TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: obscure,
       keyboardType: keyboardType,
+      maxLines: maxLines,
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.white70),
@@ -241,11 +365,30 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
       style: const TextStyle(color: Colors.white),
       validator: (value) {
-        if (value == null || value.isEmpty) {
+        // Hanya validasi required untuk field yang wajib
+        if (hint != "Bio (Opsional)" &&
+            hint != "Tanggal Lahir (Opsional)" &&
+            (value == null || value.isEmpty)) {
           return "$hint tidak boleh kosong";
         }
         return null;
       },
     );
+  }
+
+  // TAMBAHAN: Fungsi untuk format tanggal ke API (YYYY-MM-DD)
+  String? _formatDateForApi(String date) {
+    try {
+      List<String> parts = date.split('/');
+      if (parts.length == 3) {
+        String day = parts[0].padLeft(2, '0');
+        String month = parts[1].padLeft(2, '0');
+        String year = parts[2];
+        return '$year-$month-$day';
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 }

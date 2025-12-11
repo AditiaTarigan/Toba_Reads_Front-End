@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
+import 'karya_favorite/favorite_page.dart'; // Sesuaikan path import
 
 class ProfilPage extends StatefulWidget {
   const ProfilPage({Key? key}) : super(key: key);
@@ -12,7 +13,7 @@ class ProfilPage extends StatefulWidget {
 class _ProfilPageState extends State<ProfilPage> {
   bool isLoading = true;
   bool isLoggedIn = false;
-  String userName = 'Guest';
+  String userName = 'User';
 
   @override
   void initState() {
@@ -31,7 +32,7 @@ class _ProfilPageState extends State<ProfilPage> {
         userName = nama;
       } else {
         isLoggedIn = false;
-        userName = "Guest";
+        userName = "User";
       }
       isLoading = false;
     });
@@ -81,15 +82,12 @@ class _ProfilPageState extends State<ProfilPage> {
       ),
       child: Column(
         children: [
-          // Foto Profile
           CircleAvatar(
             radius: 50,
             backgroundColor: Colors.white,
             child: Icon(Icons.person, size: 60, color: Colors.grey[600]),
           ),
           const SizedBox(height: 15),
-
-          // Nama User
           Text(
             userName,
             style: const TextStyle(
@@ -99,21 +97,13 @@ class _ProfilPageState extends State<ProfilPage> {
             ),
           ),
           const SizedBox(height: 5),
-
-          // Status
           Text(
-            isLoggedIn ? 'Member Toba Reads' : 'Guest User',
+            isLoggedIn ? 'Member Toba Reads' : '',
             style: TextStyle(
               fontSize: 14,
               color: Colors.white.withOpacity(0.7),
             ),
           ),
-
-          // Tombol Login jika Guest
-          if (!isLoggedIn) ...[
-            const SizedBox(height: 15),
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: []),
-          ],
         ],
       ),
     );
@@ -153,13 +143,17 @@ class _ProfilPageState extends State<ProfilPage> {
         icon: Icons.favorite,
         title: 'Cerita Favorit',
         onTap: () {
-          // Navigate to favorite stories
+          // Navigasi langsung tanpa parameter, FavoritePage akan load data sendiri
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const FavoritePage()),
+          );
         },
       ),
       _buildMenuCard(
         icon: Icons.book,
         title: 'Karya Saya',
-        onTap: () => Navigator.pushNamed(context, '/upload'),
+        onTap: () => Navigator.pushNamed(context, '/karya_saya'),
       ),
       _buildMenuCard(
         icon: Icons.quiz,
@@ -167,18 +161,9 @@ class _ProfilPageState extends State<ProfilPage> {
         onTap: () => Navigator.pushNamed(context, '/kuis'),
       ),
       _buildMenuCard(
-        icon: Icons.library_books,
-        title: 'Kelola Cerita',
-        onTap: () {
-          // Navigate to story management
-        },
-      ),
-      _buildMenuCard(
         icon: Icons.person,
         title: 'Akun Saya',
-        onTap: () {
-          // Navigate to account settings
-        },
+        onTap: () => Navigator.pushNamed(context, '/akun_saya'),
       ),
       _buildMenuCard(
         icon: Icons.swap_horiz,
@@ -268,7 +253,7 @@ class _ProfilPageState extends State<ProfilPage> {
               await AuthService.logout();
               setState(() {
                 isLoggedIn = false;
-                userName = 'Guest';
+                userName = 'User';
               });
               Navigator.pop(context);
               Navigator.pushNamedAndRemoveUntil(
@@ -308,7 +293,7 @@ class _ProfilPageState extends State<ProfilPage> {
       builder: (context) => AlertDialog(
         title: const Text('Bantuan'),
         content: const Text(
-          'Untuk bantuan lebih lanjut, silakan hubungi customer service kami atau kunjungi website resmi Toba Reads.',
+          'Hubungi customer service kami atau kunjungi website Toba Reads.',
         ),
         actions: [
           TextButton(

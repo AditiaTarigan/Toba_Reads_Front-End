@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:tobareads/main.dart'; // Import MyApp
 import 'package:tobareads/auth_pages/login_page.dart';
-import 'package:tobareads/pages/home_page.dart';
+import 'package:tobareads/users/home_page.dart';
 import 'package:tobareads/auth_pages/register_page.dart';
 
 class TestApp extends StatelessWidget {
